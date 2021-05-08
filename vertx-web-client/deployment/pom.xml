@@ -15,6 +15,10 @@
             <artifactId>quarkus-arc-deployment</artifactId>
         </dependency>
         <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-vertx-core-deployment</artifactId>
+        </dependency>
+        <dependency>
             <groupId>io.spinach</groupId>
             <artifactId>quarkus-vertx-web-client</artifactId>
             <version>${project.version}</version>
