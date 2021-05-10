@@ -16,7 +16,6 @@ public class ProxyConfiguration {
     /**
      * type
      */
-//    @DefaultConverter
     @ConvertWith(ProxyTypeConverter.class)
     @ConfigItem
     ProxyType type;
