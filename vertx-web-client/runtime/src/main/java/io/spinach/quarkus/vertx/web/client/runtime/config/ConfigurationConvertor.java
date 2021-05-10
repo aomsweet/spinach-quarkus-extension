@@ -2,8 +2,12 @@ package io.spinach.quarkus.vertx.web.client.runtime.config;
 
 import io.vertx.core.http.HttpVersion;
 import io.vertx.core.net.ProxyOptions;
+import io.vertx.core.net.ProxyType;
 import io.vertx.ext.web.client.WebClientOptions;
 
+import java.io.UnsupportedEncodingException;
+import java.net.URI;
+import java.net.URLDecoder;
 import java.util.Optional;
 
 /**
@@ -39,24 +43,69 @@ public class ConfigurationConvertor {
         options.setTrustAll(configuration.trustAll);
         options.setVerifyHost(configuration.verifyHost);
 
-//        ProxyConfiguration proxyConfiguration = configuration.proxy;
-//        ProxyOptions proxyOptions = buildProxyOptions(proxyConfiguration);
-//        options.setProxyOptions(proxyOptions);
-
-        Optional<ProxyConfiguration> proxyConfiguration = configuration.proxy;
-        if (proxyConfiguration.isPresent()) {
-            ProxyOptions proxyOptions = buildProxyOptions(proxyConfiguration.get());
+        Optional<String> proxyServerUrl = configuration.proxyServerUrl;
+        if (proxyServerUrl.isPresent()) {
+            ProxyOptions proxyOptions = buildProxyOptions(proxyServerUrl.get());
             options.setProxyOptions(proxyOptions);
+        } else {
+//            ProxyConfiguration proxyConfiguration = configuration.proxy;
+//            ProxyOptions proxyOptions = buildProxyOptions(proxyConfiguration);
+//            options.setProxyOptions(proxyOptions);
+
+            Optional<ProxyConfiguration> proxyConfiguration = configuration.proxy;
+            if (proxyConfiguration.isPresent()) {
+                ProxyOptions proxyOptions = buildProxyOptions(proxyConfiguration.get());
+                options.setProxyOptions(proxyOptions);
+            }
         }
 
         return options;
     }
 
+    private ProxyOptions buildProxyOptions(String proxyServerUrl) {
+        try {
+            URI uri = URI.create(proxyServerUrl);
+            String scheme = uri.getScheme();
+            String userInfo = uri.getUserInfo();
+            String host = uri.getHost();
+            int port = uri.getPort();
+
+            ProxyTypeConverter converter = new ProxyTypeConverter();
+            ProxyType proxyType = converter.convert(scheme);
+
+            if (port == -1) {
+                if (proxyType == ProxyType.HTTP) {
+                    port = 3128;
+                } else {
+                    port = 1080;
+                }
+            }
+
+            ProxyOptions proxyOptions = new ProxyOptions();
+            proxyOptions.setType(proxyType)
+                .setHost(host)
+                .setPort(port);
+
+            if (userInfo != null) {
+                int i = userInfo.indexOf(':');
+                if (i == -1) {
+                    proxyOptions.setUsername(URLDecoder.decode(userInfo, "utf8"));
+                } else {
+                    proxyOptions.setUsername(URLDecoder.decode(userInfo.substring(0, i), "utf8"));
+                    proxyOptions.setPassword(URLDecoder.decode(userInfo.substring(i + 1), "utf-8"));
+                }
+            }
+            return proxyOptions;
+        } catch (UnsupportedEncodingException e) {
+            throw new IllegalArgumentException("Username or password contains unsupported characters. ", e);
+        }
+    }
+
     private ProxyOptions buildProxyOptions(ProxyConfiguration proxyConfiguration) {
         ProxyOptions proxyOptions = new ProxyOptions();
         proxyOptions.setType(proxyConfiguration.type)
-                .setHost(proxyConfiguration.host)
-                .setPort(proxyConfiguration.port);
+            .setHost(proxyConfiguration.host)
+            .setPort(proxyConfiguration.port);
 
         Optional<String> username = proxyConfiguration.username;
         if (username.isPresent()) {

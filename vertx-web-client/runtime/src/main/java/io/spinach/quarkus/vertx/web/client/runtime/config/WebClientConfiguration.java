@@ -136,6 +136,14 @@ public class WebClientConfiguration {
     @ConfigItem
     Optional<ProxyConfiguration> proxy;
 
+    /**
+     * <scheme>://<username>:<password>@<hostname>:<port>
+     * <p>
+     * proxyUrl
+     */
+    @ConfigItem
+    Optional<String> proxyServerUrl;
+
     public static class HttpVersionConverter implements Converter<HttpVersion> {
 
         @Override

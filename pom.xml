@@ -9,6 +9,7 @@
     <packaging>pom</packaging>
     <version>1.0-SNAPSHOT</version>
     <modules>
+        <module>app-examples</module>
         <module>vertx-web-client</module>
     </modules>
     <name>spinach-quarkus-extension</name>
