@@ -6,7 +6,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import io.spinach.quarkus.vertx.web.client.WebClientName;
-import io.spinach.quarkus.vertx.web.client.runtime.WebClientProducer;
+import io.spinach.quarkus.vertx.web.client.runtime.config.RootWebClientConfiguration;
 import io.vertx.core.buffer.Buffer;
 import io.vertx.ext.web.client.HttpRequest;
 import io.vertx.ext.web.client.WebClient;
@@ -30,7 +30,7 @@ public class WebClientResource {
     WebClient webClientC1;
 
     @Inject
-    WebClientProducer webClientProducer;
+    RootWebClientConfiguration configuration;
 
     @GET
     @Path("/config")
@@ -39,7 +39,7 @@ public class WebClientResource {
         ObjectMapper objectMapper = new ObjectMapper();
         objectMapper.setVisibility(PropertyAccessor.FIELD, JsonAutoDetect.Visibility.ANY);
         objectMapper.registerModule(new JavaTimeModule());
-        return objectMapper.writeValueAsString(webClientProducer.getConfiguration());
+        return objectMapper.writeValueAsString(configuration);
     }
 
     @GET

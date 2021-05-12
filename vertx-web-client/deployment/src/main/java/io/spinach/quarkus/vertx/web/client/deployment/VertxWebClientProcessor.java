@@ -10,7 +10,7 @@ import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.builditem.ExtensionSslNativeSupportBuildItem;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.spinach.quarkus.vertx.web.client.WebClientName;
-import io.spinach.quarkus.vertx.web.client.runtime.WebClientProducer;
+import io.spinach.quarkus.vertx.web.client.runtime.WebClientDestroyer;
 import io.spinach.quarkus.vertx.web.client.runtime.WebClientRecorder;
 import io.spinach.quarkus.vertx.web.client.runtime.config.RootWebClientConfiguration;
 import io.vertx.ext.web.client.WebClient;
@@ -19,11 +19,12 @@ import org.jboss.jandex.AnnotationValue;
 import org.jboss.jandex.DotName;
 import org.jboss.jandex.IndexView;
 
-import javax.enterprise.context.ApplicationScoped;
 import javax.enterprise.inject.Default;
-import java.util.*;
-
-import static io.quarkus.arc.processor.BuiltinScope.SINGLETON;
+import javax.inject.Singleton;
+import java.util.Collection;
+import java.util.HashSet;
+import java.util.Set;
+import java.util.function.Supplier;
 
 class VertxWebClientProcessor {
 
@@ -42,23 +43,17 @@ class VertxWebClientProcessor {
     }
 
     @BuildStep
-    List<AdditionalBeanBuildItem> registerWebClientProducerBeans() {
-        return Arrays.asList(
-            AdditionalBeanBuildItem
-                .builder()
-                .addBeanClass(WebClientProducer.class)
-                .setDefaultScope(SINGLETON.getName())
-                .setUnremovable()
-                .build(),
-            AdditionalBeanBuildItem
-                .builder()
-                .addBeanClass(WebClientName.class)
-                .build());
+    AdditionalBeanBuildItem registerWebClientNameBean() {
+        return AdditionalBeanBuildItem
+            .builder()
+            .addBeanClass(WebClientName.class)
+            .build();
     }
 
     @BuildStep
     @Record(ExecutionTime.RUNTIME_INIT)
-    public void produceWebClient(WebClientRecorder recorder, BeanArchiveIndexBuildItem indexBuildItem,
+    public void produceWebClient(WebClientRecorder recorder,
+                                 BeanArchiveIndexBuildItem indexBuildItem,
                                  BuildProducer<SyntheticBeanBuildItem> syntheticBeans) {
         Set<String> clientNames = new HashSet<>();
         clientNames.add(RootWebClientConfiguration.DEFAULT_CLIENT);
@@ -73,28 +68,27 @@ class VertxWebClientProcessor {
         }
 
         for (String clientName : clientNames) {
-            syntheticBeans.produce(createWebClientSyntheticBean(recorder, clientName));
+            syntheticBeans.produce(createWebClientSyntheticBean(clientName, recorder));
         }
     }
 
-    private SyntheticBeanBuildItem createWebClientSyntheticBean(WebClientRecorder recorder, String clientName) {
+    private SyntheticBeanBuildItem createWebClientSyntheticBean(String clientName,
+                                                                WebClientRecorder recorder) {
+        Supplier<WebClient> webClient = recorder.configureWebClient(clientName);
         SyntheticBeanBuildItem.ExtendedBeanConfigurator configurator = SyntheticBeanBuildItem
             .configure(WebClient.class)
-            .scope(ApplicationScoped.class)
-            .supplier(recorder.webClientSupplier(clientName))
-            .setRuntimeInit();
+            .unremovable()
+            .setRuntimeInit()
+            .supplier(webClient)
+            .scope(Singleton.class)
+            .destroyer(WebClientDestroyer.class);
 
-        return applyCommonBeanConfig(clientName, configurator);
-    }
-
-    private SyntheticBeanBuildItem applyCommonBeanConfig(String clientName,
-                                                         SyntheticBeanBuildItem.ExtendedBeanConfigurator configurator) {
-        configurator.unremovable();
         if (RootWebClientConfiguration.isDefault(clientName)) {
-            configurator.addQualifier(Default.class);
+            configurator.addQualifier(Default.class).done();
         } else {
             configurator.addQualifier().annotation(WEB_CLIENT_ANNOTATION).addValue("value", clientName).done();
         }
+
         return configurator.done();
     }
 }
