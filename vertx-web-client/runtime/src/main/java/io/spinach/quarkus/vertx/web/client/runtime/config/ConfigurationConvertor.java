@@ -9,6 +9,7 @@ import java.io.UnsupportedEncodingException;
 import java.net.URI;
 import java.net.URLDecoder;
 import java.util.Optional;
+import java.util.concurrent.TimeUnit;
 
 /**
  * @author aomsweet
@@ -24,6 +25,26 @@ public class ConfigurationConvertor {
         }
         options.setMaxPoolSize(configuration.maxPoolSize);
         options.setTryUseCompression(configuration.tryUseCompression);
+        Optional<Integer> idleTimeout = configuration.idleTimeout;
+        if (idleTimeout.isPresent()) {
+            options.setIdleTimeout(idleTimeout.get());
+        }
+        Optional<TimeUnit> idleTimeoutUnit = configuration.idleTimeoutUnit;
+        if (idleTimeoutUnit.isPresent()) {
+            options.setIdleTimeoutUnit(idleTimeoutUnit.get());
+        }
+        Optional<Boolean> ssl = configuration.ssl;
+        if (ssl.isPresent()) {
+            options.setSsl(ssl.get());
+        }
+        Optional<Integer> sslHandshakeTimeout = configuration.sslHandshakeTimeout;
+        if (sslHandshakeTimeout.isPresent()) {
+            options.setSslHandshakeTimeout(sslHandshakeTimeout.get());
+        }
+        Optional<TimeUnit> sslHandshakeTimeoutUnit = configuration.sslHandshakeTimeoutUnit;
+        if (sslHandshakeTimeoutUnit.isPresent()) {
+            options.setSslHandshakeTimeoutUnit(sslHandshakeTimeoutUnit.get());
+        }
         options.setKeepAlive(configuration.keepAlive);
         options.setKeepAliveTimeout((int) configuration.keepAliveTimeout.getSeconds());
         options.setConnectTimeout((int) configuration.connectTimeout.getSeconds());
@@ -43,18 +64,14 @@ public class ConfigurationConvertor {
         options.setTrustAll(configuration.trustAll);
         options.setVerifyHost(configuration.verifyHost);
 
-        Optional<String> proxyServerUrl = configuration.proxyServerUrl;
-        if (proxyServerUrl.isPresent()) {
-            ProxyOptions proxyOptions = buildProxyOptions(proxyServerUrl.get());
+        Optional<ProxyConfiguration> proxyConfiguration = configuration.proxy;
+        if (proxyConfiguration.isPresent()) {
+            ProxyOptions proxyOptions = buildProxyOptions(proxyConfiguration.get());
             options.setProxyOptions(proxyOptions);
         } else {
-//            ProxyConfiguration proxyConfiguration = configuration.proxy;
-//            ProxyOptions proxyOptions = buildProxyOptions(proxyConfiguration);
-//            options.setProxyOptions(proxyOptions);
-
-            Optional<ProxyConfiguration> proxyConfiguration = configuration.proxy;
-            if (proxyConfiguration.isPresent()) {
-                ProxyOptions proxyOptions = buildProxyOptions(proxyConfiguration.get());
+            Optional<String> proxyServerUrl = configuration.proxyUrl;
+            if (proxyServerUrl.isPresent()) {
+                ProxyOptions proxyOptions = buildProxyOptions(proxyServerUrl.get());
                 options.setProxyOptions(proxyOptions);
             }
         }
@@ -70,8 +87,7 @@ public class ConfigurationConvertor {
             String host = uri.getHost();
             int port = uri.getPort();
 
-            ProxyTypeConverter converter = new ProxyTypeConverter();
-            ProxyType proxyType = converter.convert(scheme);
+            ProxyType proxyType = ProxyType.valueOf(scheme.toUpperCase());
 
             if (port == -1) {
                 if (proxyType == ProxyType.HTTP) {

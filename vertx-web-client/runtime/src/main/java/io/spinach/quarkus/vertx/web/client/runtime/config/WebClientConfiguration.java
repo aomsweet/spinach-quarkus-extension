@@ -2,12 +2,11 @@ package io.spinach.quarkus.vertx.web.client.runtime.config;
 
 import io.quarkus.runtime.annotations.ConfigGroup;
 import io.quarkus.runtime.annotations.ConfigItem;
-import io.quarkus.runtime.annotations.ConvertWith;
 import io.vertx.core.http.HttpVersion;
-import org.eclipse.microprofile.config.spi.Converter;
 
 import java.time.Duration;
 import java.util.Optional;
+import java.util.concurrent.TimeUnit;
 
 /**
  * @author aomsweet
@@ -18,7 +17,7 @@ public class WebClientConfiguration {
     /**
      * userAgentEnabled
      */
-    @ConfigItem(defaultValue = "false")
+    @ConfigItem(defaultValue = "true")
     boolean userAgentEnabled;
 
     /**
@@ -30,7 +29,7 @@ public class WebClientConfiguration {
     /**
      * maxPoolSize
      */
-    @ConfigItem(defaultValue = "16")
+    @ConfigItem(defaultValue = "8")
     int maxPoolSize;
 
     /**
@@ -38,6 +37,36 @@ public class WebClientConfiguration {
      */
     @ConfigItem(defaultValue = "true")
     boolean tryUseCompression;
+
+    /**
+     * idleTimeout
+     */
+    @ConfigItem
+    Optional<Integer> idleTimeout;
+
+    /**
+     * idleTimeoutUnit
+     */
+    @ConfigItem
+    Optional<TimeUnit> idleTimeoutUnit;
+
+    /**
+     * ssl
+     */
+    @ConfigItem
+    Optional<Boolean> ssl;
+
+    /**
+     * sslHandshakeTimeout
+     */
+    @ConfigItem
+    Optional<Integer> sslHandshakeTimeout;
+
+    /**
+     * sslHandshakeTimeoutUnit
+     */
+    @ConfigItem
+    Optional<TimeUnit> sslHandshakeTimeoutUnit;
 
     /**
      * keepAlive
@@ -61,7 +90,6 @@ public class WebClientConfiguration {
      * protocolVersion
      */
     @ConfigItem
-    @ConvertWith(HttpVersionConverter.class)
     Optional<HttpVersion> protocolVersion;
 
     /**
@@ -132,6 +160,10 @@ public class WebClientConfiguration {
 
     /**
      * proxyConfiguration
+     * <p>
+     * If `proxyUrl` is configured, it will be ignored
+     *
+     * @see #proxyUrl
      */
     @ConfigItem
     Optional<ProxyConfiguration> proxy;
@@ -142,23 +174,6 @@ public class WebClientConfiguration {
      * proxyUrl
      */
     @ConfigItem
-    Optional<String> proxyServerUrl;
+    Optional<String> proxyUrl;
 
-    public static class HttpVersionConverter implements Converter<HttpVersion> {
-
-        @Override
-        public HttpVersion convert(String value) {
-            value = value.trim().toUpperCase();
-            switch (value) {
-                case "HTTP_1_1":
-                    return HttpVersion.HTTP_1_1;
-                case "HTTP_1_0":
-                    return HttpVersion.HTTP_1_0;
-                case "HTTP_2":
-                    return HttpVersion.HTTP_2;
-                default:
-                    throw new IllegalArgumentException("Unsupported value [" + value + "] given.");
-            }
-        }
-    }
 }
