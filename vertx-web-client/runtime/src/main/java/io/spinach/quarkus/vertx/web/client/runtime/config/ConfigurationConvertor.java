@@ -105,7 +105,7 @@ public class ConfigurationConvertor {
             if (userInfo != null) {
                 int i = userInfo.indexOf(':');
                 if (i == -1) {
-                    proxyOptions.setUsername(URLDecoder.decode(userInfo, "utf8"));
+                    proxyOptions.setPassword(URLDecoder.decode(userInfo, "utf8"));
                 } else {
                     proxyOptions.setUsername(URLDecoder.decode(userInfo.substring(0, i), "utf8"));
                     proxyOptions.setPassword(URLDecoder.decode(userInfo.substring(i + 1), "utf-8"));
