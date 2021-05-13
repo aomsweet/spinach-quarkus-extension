@@ -12,12 +12,6 @@ import java.util.Map;
 @ConfigRoot(name = "spinach.web.client", phase = ConfigPhase.RUN_TIME)
 public class RootWebClientConfiguration {
 
-    public static final String DEFAULT_CLIENT = "<default>";
-
-    public static boolean isDefault(String name) {
-        return DEFAULT_CLIENT.equals(name);
-    }
-
     /**
      * defaultConfiguration
      */
@@ -30,7 +24,4 @@ public class RootWebClientConfiguration {
     @ConfigItem(name = ConfigItem.PARENT)
     public Map<String, WebClientConfiguration> additionalConfiguration;
 
-    public WebClientConfiguration getWebClientConfiguration(String name) {
-        return isDefault(name) ? defaultConfiguration : additionalConfiguration.get(name);
-    }
 }

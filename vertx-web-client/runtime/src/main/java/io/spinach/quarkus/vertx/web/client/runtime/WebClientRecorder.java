@@ -17,16 +17,18 @@ import java.util.function.Supplier;
 @Recorder
 public class WebClientRecorder {
 
-    public Supplier<WebClient> configureWebClient(String clientName) {
-        return () -> createWebClient(clientName);
+    public Supplier<WebClient> configureWebClient(String name) {
+        return () -> createWebClient(name);
     }
 
-    private WebClient createWebClient(String clientName) {
+    private WebClient createWebClient(String name) {
         Vertx vertx = Arc.container().instance(Vertx.class).get();
         RootWebClientConfiguration rootConfiguration = Arc.container().instance(RootWebClientConfiguration.class).get();
-        WebClientConfiguration configuration = rootConfiguration.getWebClientConfiguration(clientName);
+        WebClientConfiguration configuration = name == null
+            ? rootConfiguration.defaultConfiguration
+            : rootConfiguration.additionalConfiguration.get(name);
         if (configuration == null) {
-            throw new IllegalArgumentException("Configuration named [" + clientName + "] could not be found.");
+            throw new IllegalArgumentException("Configuration named [" + name + "] could not be found.");
         } else {
             ConfigurationConvertor convertor = new ConfigurationConvertor();
             WebClientOptions options = convertor.convertWebClientOptions(configuration);

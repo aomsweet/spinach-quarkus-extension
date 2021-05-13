@@ -12,7 +12,6 @@ import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.spinach.quarkus.vertx.web.client.WebClientName;
 import io.spinach.quarkus.vertx.web.client.runtime.WebClientDestroyer;
 import io.spinach.quarkus.vertx.web.client.runtime.WebClientRecorder;
-import io.spinach.quarkus.vertx.web.client.runtime.config.RootWebClientConfiguration;
 import io.vertx.ext.web.client.WebClient;
 import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.AnnotationValue;
@@ -22,8 +21,6 @@ import org.jboss.jandex.IndexView;
 import javax.enterprise.inject.Default;
 import javax.inject.Singleton;
 import java.util.Collection;
-import java.util.HashSet;
-import java.util.Set;
 import java.util.function.Supplier;
 
 class VertxWebClientProcessor {
@@ -55,26 +52,24 @@ class VertxWebClientProcessor {
     public void produceWebClient(WebClientRecorder recorder,
                                  BeanArchiveIndexBuildItem indexBuildItem,
                                  BuildProducer<SyntheticBeanBuildItem> syntheticBeans) {
-        Set<String> clientNames = new HashSet<>();
-        clientNames.add(RootWebClientConfiguration.DEFAULT_CLIENT);
+        // default web client
+        syntheticBeans.produce(createWebClientSyntheticBean(null, recorder));
 
+        // named web client
         IndexView indexView = indexBuildItem.getIndex();
         Collection<AnnotationInstance> clientAnnotations = indexView.getAnnotations(WEB_CLIENT_ANNOTATION);
         for (AnnotationInstance annotation : clientAnnotations) {
             AnnotationValue value = annotation.value();
             if (value != null) {
-                clientNames.add(annotation.value().asString());
+                String name = annotation.value().asString();
+                syntheticBeans.produce(createWebClientSyntheticBean(name, recorder));
             }
-        }
-
-        for (String clientName : clientNames) {
-            syntheticBeans.produce(createWebClientSyntheticBean(clientName, recorder));
         }
     }
 
-    private SyntheticBeanBuildItem createWebClientSyntheticBean(String clientName,
+    private SyntheticBeanBuildItem createWebClientSyntheticBean(String name,
                                                                 WebClientRecorder recorder) {
-        Supplier<WebClient> webClient = recorder.configureWebClient(clientName);
+        Supplier<WebClient> webClient = recorder.configureWebClient(name);
         SyntheticBeanBuildItem.ExtendedBeanConfigurator configurator = SyntheticBeanBuildItem
             .configure(WebClient.class)
             .unremovable()
@@ -83,10 +78,10 @@ class VertxWebClientProcessor {
             .scope(Singleton.class)
             .destroyer(WebClientDestroyer.class);
 
-        if (RootWebClientConfiguration.isDefault(clientName)) {
+        if (name == null) {
             configurator.addQualifier(Default.class).done();
         } else {
-            configurator.addQualifier().annotation(WEB_CLIENT_ANNOTATION).addValue("value", clientName).done();
+            configurator.addQualifier().annotation(WEB_CLIENT_ANNOTATION).addValue("value", name).done();
         }
 
         return configurator.done();
