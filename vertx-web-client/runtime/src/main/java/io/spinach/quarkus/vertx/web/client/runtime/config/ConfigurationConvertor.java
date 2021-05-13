@@ -87,7 +87,17 @@ public class ConfigurationConvertor {
             String host = uri.getHost();
             int port = uri.getPort();
 
-            ProxyType proxyType = ProxyType.valueOf(scheme.toUpperCase());
+            ProxyType proxyType;
+            scheme = scheme.toUpperCase();
+            try {
+                proxyType = ProxyType.valueOf(scheme);
+            } catch (IllegalArgumentException e) {
+                if ("HTTPS".equals(scheme)) {
+                    proxyType = ProxyType.HTTP;
+                } else {
+                    throw e;
+                }
+            }
 
             if (port == -1) {
                 if (proxyType == ProxyType.HTTP) {
