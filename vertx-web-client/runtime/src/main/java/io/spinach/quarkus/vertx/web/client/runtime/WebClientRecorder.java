@@ -1,6 +1,5 @@
 package io.spinach.quarkus.vertx.web.client.runtime;
 
-import io.quarkus.arc.Arc;
 import io.quarkus.runtime.annotations.Recorder;
 import io.spinach.quarkus.vertx.web.client.runtime.config.ConfigurationConvertor;
 import io.spinach.quarkus.vertx.web.client.runtime.config.RootWebClientConfiguration;
@@ -17,22 +16,25 @@ import java.util.function.Supplier;
 @Recorder
 public class WebClientRecorder {
 
-    public Supplier<WebClient> configureWebClient(String name) {
-        return () -> createWebClient(name);
+    ConfigurationConvertor convertor = new ConfigurationConvertor();
+
+    public Supplier<WebClient> createWebClient(String name,
+                                               Supplier<Vertx> vertx,
+                                               RootWebClientConfiguration configuration) {
+        return () -> {
+            WebClientOptions options;
+            if (name == null) {
+                options = convertor.convertWebClientOptions(configuration.defaultConfiguration);
+            } else {
+                WebClientConfiguration namedConfiguration = configuration.additionalConfiguration.get(name);
+                if (namedConfiguration == null) {
+                    throw new IllegalArgumentException("Configuration named [" + name + "] could not be found.");
+                }
+                options = convertor.convertWebClientOptions(namedConfiguration);
+            }
+            return WebClient.create(vertx.get(), options);
+        };
     }
 
-    private WebClient createWebClient(String name) {
-        Vertx vertx = Arc.container().instance(Vertx.class).get();
-        RootWebClientConfiguration rootConfiguration = Arc.container().instance(RootWebClientConfiguration.class).get();
-        WebClientConfiguration configuration = name == null
-            ? rootConfiguration.defaultConfiguration
-            : rootConfiguration.additionalConfiguration.get(name);
-        if (configuration == null) {
-            throw new IllegalArgumentException("Configuration named [" + name + "] could not be found.");
-        } else {
-            ConfigurationConvertor convertor = new ConfigurationConvertor();
-            WebClientOptions options = convertor.convertWebClientOptions(configuration);
-            return WebClient.create(vertx, options);
-        }
-    }
+
 }
