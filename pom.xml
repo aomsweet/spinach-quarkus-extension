@@ -24,7 +24,7 @@
         <surefire-plugin.version>3.0.0-M5</surefire-plugin.version>
         <failsafe-plugin.version>${surefire-plugin.version}</failsafe-plugin.version>
 
-        <quarkus.version>1.13.4.Final</quarkus.version>
+        <quarkus.version>2.0.3.Final</quarkus.version>
         <lombok.version>1.18.20</lombok.version>
     </properties>
     <dependencyManagement>
